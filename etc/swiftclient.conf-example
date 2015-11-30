@@ -1,0 +1,52 @@
+[DEFAULT]
+# The default auth endpoint to use. Auth endpoints are defined in their
+# own sections; the section name must begin with "auth:".
+auth = vsaio:admin
+
+# When using `swift-auth` with a `swift-agent` server providing tokens,
+# should we verify the token is still good by default? This may be
+# overridden either in the auth sections or by using `swift-auth`'s
+# --verify and --no-verify options.
+verify = True
+
+[insecure]
+# Connections to the servers below will still work
+# even if their SSL certificates are invalid.
+servers =
+ https://identity.example.com
+
+# The following auth endpoints may list plaintext passwords.
+# By default, passwords in this file will be ignored.
+auth =
+ vsaio:admin
+ keystone_v2
+
+[auth:public]
+use = swiftagent.auth:noauth
+storage_url = http://saio:8080/v1/AUTH_test
+
+[auth:vsaio:admin]
+use = swiftagent.auth:v1
+auth_url = http://saio:8080/auth/v1.0
+username = admin:admin
+password = admin
+
+[auth:keystone_v2]
+use = swiftagent.auth:v2
+auth_url = https://identity.example.com:5000/v2.0/tokens
+username = tester
+password = testing
+tenant_name = test
+
+[auth:keystone_v3]
+use = swiftagent.auth:v3
+auth_url = https://identity.example.com:5000/v3/auth/tokens
+username = tester
+domain_name = test
+# Since keystone_v3 is not in the list of insecure auth endpoints,
+# this will be ignored. Instead, the user will be prompted to enter
+# a password.
+password = testing
+# TODO: scoping...
+#project = SS
+#project_domain = default
