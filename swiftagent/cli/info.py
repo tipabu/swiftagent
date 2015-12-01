@@ -12,14 +12,23 @@ from swiftagent import models
 
 
 def main(args):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', action='store_true',
-                        help='include debugging information')
+    '''Get information about the capabilities of a Swift cluster.
+
+    If a swift-agent server seems to be running, that will be used to cache responses.
+    '''
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument(
+        '--debug', action='store_true',
+        help='include debugging information')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('url', default=None, nargs='?',
-                       help='the url of the Swift cluster '
-                            'whose info you want to get')
-    group.add_argument('--auth', help='the auth endpoint to use')
+    group.add_argument(
+        'url', default=None, nargs='?',
+        help='the url of the Swift cluster whose capabilities you want to get')
+    group.add_argument(
+        '--auth', help='the auth endpoint to use')
+    parser.add_argument(
+        '--refresh', action='store_true',
+        help='if using a swift-agent server, force a fresh response from the cluster')
     args = parser.parse_args(args[1:])
 
     if args.debug:
@@ -44,7 +53,10 @@ def main(args):
     if client.can_use_swift_agent():
         sock = os.environ[client.SOCKET_ENV_VAR]
         with client.SwiftAgentClient(sock) as agent_client:
-            info = agent_client.info(url)
+            if args.refresh:
+                info = agent_client.reinfo(url)
+            else:
+                info = agent_client.info(url)
     else:
         info = models.Cluster(auth.noauth({'storage_url': url})).info()
     # TODO: consider ways to format this better/more meaningfully

@@ -53,11 +53,21 @@ def cleanup():
 
 
 def main(args):
-    parser = argparse.ArgumentParser()
+    '''Start or stop a swift-agent server.
+
+    With no arguments, starts a server in the background.
+    '''
+    parser = argparse.ArgumentParser(description=main.__doc__)
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--daemon', dest='socket_addr')
-    group.add_argument('--stop', action='store_true')
-    group.add_argument('--debug', action='store_true')
+    group.add_argument(
+        '--daemon', dest='socket_addr',
+        help='start the server in the foreground, listening on SOCKET_ADDR')
+    group.add_argument(
+        '--stop', action='store_true',
+        help='stop the server and clean up the socket')
+    group.add_argument(
+        '--debug', action='store_true',
+        help='log debugging information to ${HOME}/.swift-agent.log')
     args = parser.parse_args(args[1:])
 
     if args.socket_addr:

@@ -14,15 +14,23 @@ from swiftagent import models
 
 
 def main(args):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', action='store_true',
-                        help='include debugging information')
-    parser.add_argument('auth', default=None, nargs='?',
-                        help='the auth endpoint to use')
-    parser.add_argument('--verify', action='store_true', default=None,
-                        help='verify the token received')
-    parser.add_argument('--no-verify', action='store_false', dest='verify',
-                        help='skip token verification')
+    '''Get a storage URL and auth token for a Swift cluster.
+
+    If a swift-agent server seems to be running, that will be used to authenticate.
+    '''
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument(
+        '--debug', action='store_true',
+        help='include debugging information')
+    parser.add_argument(
+        'auth', default=None, nargs='?',
+        help='the auth endpoint to use')
+    parser.add_argument(
+        '--verify', action='store_true', default=None,
+        help='verify the token is still valid if received from a swift-agent server')
+    parser.add_argument(
+        '--no-verify', action='store_false', dest='verify',
+        help='skip token verification')
     args = parser.parse_args(args[1:])
 
     if args.debug:
@@ -48,12 +56,10 @@ def main(args):
     else:
         verify = args.verify
 
-    if verify:
+    if verify and client.can_use_swift_agent():
         try:
             models.Cluster(authenticator).default_account.info()
         except base.Unauthorized:
-            if not client.can_use_swift_agent():
-                raise
             if authenticator.ever_prompted:
                 raise
 

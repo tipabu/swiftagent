@@ -7,7 +7,8 @@ from swiftagent import config
 
 
 def main(args):
-    parser = argparse.ArgumentParser()
+    '''List the available auth endpoints and their auth URLs.'''
+    parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument('--debug', action='store_true',
                         help='include debugging information')
     args = parser.parse_args(args[1:])
