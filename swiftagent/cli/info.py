@@ -1,9 +1,9 @@
 from __future__ import print_function
 
 import argparse
+import json
 import logging
 import os
-import pprint
 
 from swiftagent.agent import client
 from swiftagent import auth
@@ -47,4 +47,5 @@ def main(args):
             info = agent_client.info(url)
     else:
         info = models.Cluster(auth.noauth({'storage_url': url})).info()
-    pprint.pprint(info)
+    # TODO: consider ways to format this better/more meaningfully
+    print(json.dumps(info, indent=2, sort_keys=True))
