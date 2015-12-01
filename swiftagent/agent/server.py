@@ -42,7 +42,7 @@ class SwiftAgentServer(comm.LineOrientedUnixServer):
         :returns: a dict containing the (possibly cached) result
                   of the /info request
         '''
-        info = self.cache['info'].get(config.scheme_netloc_only(url))
+        info = self.cache['info'].get(url)
         if not info:
             cluster = models.Cluster(auth.noauth({'storage_url': url}))
             info = self.cache['info'][url] = cluster.info()
@@ -123,7 +123,8 @@ class SwiftAgentServer(comm.LineOrientedUnixServer):
         :param data: a string of the form "[cluster_url]"
         :returns: a single-line JSON representation of the /info response
         '''
-        return json.dumps(self.get_info(data))
+        url = config.scheme_netloc_only(data)
+        return json.dumps(self.get_info(url))
 
     def handle_reinfo(self, data):
         '''Socket command: get the fresh capabilities of a Swift cluster.
@@ -131,5 +132,6 @@ class SwiftAgentServer(comm.LineOrientedUnixServer):
         :param data: a string of the form "[cluster_url]"
         :returns: a single-line JSON representation of the /info response
         '''
-        self.purge(data)
-        return json.dumps(self.get_info(data))
+        url = config.scheme_netloc_only(data)
+        self.purge(url)
+        return json.dumps(self.get_info(url))

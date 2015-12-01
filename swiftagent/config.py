@@ -22,7 +22,7 @@ def scheme_netloc_only(url):
     '''
     scheme_netloc = urllib.parse.urlparse(url)[:2]
     if not all(scheme_netloc):
-        raise ValueError('Expected an absolute URL')
+        raise ValueError('Expected an absolute URL, not %r' % url)
     # apparently, pylint thinks six.moves...urlunparse takes no arguments?
     # pylint: disable=too-many-function-args
     return urllib.parse.urlunparse(scheme_netloc + ('', ) * 4)

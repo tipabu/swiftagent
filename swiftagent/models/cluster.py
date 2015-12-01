@@ -17,10 +17,13 @@ class Cluster(object):
     def __init__(self, authenticator):
         self.auth = authenticator
         storage_url, dummy = self.auth.get_credentials()
-        # NB: base_url still includes /v1
-        base_url, account_name = storage_url.rstrip('/').rsplit('/', 1)
-        self.base_url = base_url
-        self.default_account_name = account_name
+        # NB: base_url should still include /v1 if present
+        storage_url = storage_url.rstrip('/')
+        if storage_url.count('/') >= 4:
+            self.base_url, self.default_account_name = storage_url.rsplit('/', 1)
+        else:
+            self.base_url = storage_url
+            self.default_account_name = None
 
     def info(self):
         url = scheme_netloc_only(self.base_url) + '/info'
@@ -40,6 +43,8 @@ class Cluster(object):
 
     def account(self, name=None):
         name = name or self.default_account_name
+        if not name:
+            raise ValueError('An account name is required')
         return account.Account(self, '%s/%s' % (self.base_url, name))
 
     def authed_req(self, method, url, params=None, headers=None):
