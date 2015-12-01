@@ -80,6 +80,7 @@ def main(args):
 
     socket_addr = os.path.join(tempfile.mkdtemp(), 'socket')
     pid = subprocess.Popen([sys.argv[0], '--daemon', socket_addr],
+                           preexec_fn=os.setpgrp,
                            stdout=agent_out, stderr=agent_out,
                            stdin=open('/dev/null', 'r')).pid
     io.export({client.SOCKET_ENV_VAR: socket_addr,
