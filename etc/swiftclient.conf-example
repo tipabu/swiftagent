@@ -3,10 +3,17 @@
 # own sections; the section name must begin with "auth:".
 auth = vsaio:admin
 
+# The default mode
+mode = default
+
 # When using `swift-auth` with a `swift-agent` server providing tokens,
 # should we verify the token is still good by default? This may be
 # overridden either in the auth sections or by using `swift-auth`'s
 # --verify and --no-verify options.
+#
+# Why the special treatment for `swift-auth`? Other commands will use
+# the token they receive immediately, and should already know to attempt
+# a reauth on `401 Unauthorized` responses.
 verify = True
 
 [insecure]
@@ -50,3 +57,130 @@ password = testing
 # TODO: scoping...
 #project = SS
 #project_domain = default
+
+
+[mode:default]
+# === General Options ===
+# Number of times to retry failed operations
+retries = 3
+
+# On upload, verify that the checksum of the file uploaded matches the
+# checksum returned by the server. If they differ, the upload will be
+# retried, if possible. Set the option below to False to disable this
+# behavior.
+verify_checksum = True
+
+# When uploading a stream, buffer the stream. If the start of the stream
+# is still in the buffer, upload failures can still be retried. Note that
+# each object and segment thread will have its own buffer; if this is large,
+# `object_threads` and `segment_threads` should probably be smaller.
+upload_buffer = 10 MB
+
+# === Threading ===
+container_threads = 10
+object_threads = 10
+segment_threads = 10
+
+# === File Comparisons ===
+# On upload, check whether the object already exists. If it does and its
+# X-Object-Meta-Mtime is greater than or equal to the local file's mtime,
+# skip the upload.
+#
+# On download, check whether the local file already exists. If it does
+# and its mtime is greater than or equal to the remote object's
+# X-Object-Meta-Mtime, abort the download.
+changed = False
+
+# Similar to `changed`, but use MD5 sums to compare actual file contents
+# instead of just comparing mtimes.
+skip_identical = False
+
+# How should file content be compressed on upload and decompressed on
+# download?
+#   off   -- No compression will be used.
+#   gzip  -- Use gzip compression.
+#   bzip2 -- Use bzip2 compression.
+# Note that values other than "off" will interfere with `skip_identical`
+# comparisons.
+compression = off
+
+# Maybe better way of implementing the compression idea above?
+#upload_pipeline = aes-256-ctr gzip file-reader
+#Should we try to decode objects with Content-Encoding? See Codecs, below.
+#decode_downloads = False
+
+# === Large Objects ===
+# How should "large" objects be handled?
+#   static    -- Upload objects in chunks, then upload SLO manifest. This offers
+#                integrity checking both when the manifest is uploaded and as
+#                the large object is downloaded. If the current server does not
+#                support SLO, this will automatically switch to "dynamic" mode.
+#   dynamic   -- Upload objects in chunks, then upload DLO manifest. This offers
+#                no integrity checks, but is available on more versions of
+#                Swift.
+#   client    -- Upload objects in chunks, then upload "Swift client" manifest.
+#                Other clients will likely not have any clue what's going on,
+#                but swiftclient will be able to fetch the segments in parallel
+#                and perform other optimizations. Client manifests are
+#                guaranteed to be readable by all future versions of
+#                swiftclient, though older clients may not be able to read newer
+#                manifests.
+#   client:v1 -- Where "client" will always use the newest "Swift client"
+#                manifest, this will only use version 1. This may be useful to
+#                preserve backwards compatibility with older clients.
+#                Its features include:
+#                  * ...
+#   off       -- Upload all objects directly, with no chunking. Ignore the
+#                remaining options.
+large_object_mode = static
+
+# Files of size at least large_object_threshold are considered "large."
+# If swift.max_file_size is lower for the current server, that will be used
+# instead.
+large_object_threshold = 1 GB
+
+# Should streaming uploads be assumed to be "large"?
+large_streams = False
+
+# Each chunk should be at most this large. Must be less than or equal to
+# large_object_threshold. Additionally, if swift.max_file_size is lower for
+# the current server, that will be used instead.
+segment_size = 100 MB
+
+# Should we check for (and set if not present)
+# X-Container-Meta-Segment-Container on the primary container?
+use_container_meta_segment_container = True
+
+# If X-Container-Meta-Segment-Container is not set (or is not checked),
+# what container should be used for segments? If it does not exist, it will
+# be created with the same storage policy as the primary container.
+segment_container = .{container}_segments
+
+# When deleting or overwriting objects, don't worry about cleaning up
+# segments of large objects that are no longer available.
+leave_segments = False
+
+[mode:streaming]
+# settings optimized for streaming uploads
+upload_buffer = 100MB
+segment_threads = 1
+large_streams = True
+
+
+# ***** Codecs *****
+# Codecs are used to do on-the-fly encoding and decoding.
+# They can affect Content-Encoding or Transfer-Encoding, depending upon
+# implementation.
+# TODO: these should really just be endpoints....
+
+[codec:gzip]
+use = swiftclient.codecs:gzip_codec
+
+[codec:deflate]
+use = swiftclient.codecs:deflate_codec
+
+[codec:bzip2]
+use = swiftclient.codecs:bzip2_codec
+
+[codec:openssl]
+use = swiftclient.codecs:openssl_codec
