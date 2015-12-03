@@ -43,6 +43,10 @@ class V2Authenticator(base.BaseAuthenticator):
 
         try:
             token = resp['access']['token']['id']
+            if 'expires' in resp['access']['token']:
+                LOGGER.info('Token expires at %s',
+                            resp['access']['token']['expires'])
+
             services = [s for s in resp['access']['serviceCatalog']
                         if s.get('type') == 'object-store']
             LOGGER.info('Found services: %r', [s['name'] for s in services])

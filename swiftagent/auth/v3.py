@@ -68,6 +68,9 @@ class V3Authenticator(base.BaseAuthenticator):
 
         token = headers['X-Subject-Token']
         try:
+            if 'expires_at' in resp['token']:
+                LOGGER.info('Token expires at %s',
+                            resp['token']['expires_at'])
             services = [s for s in resp['token']['catalog']
                         if s.get('type') == 'object-store']
             LOGGER.info('Found services: %r', [s['name'] for s in services])
