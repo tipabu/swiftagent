@@ -14,7 +14,8 @@ from swiftagent import models
 def main(args):
     '''Get information about the capabilities of a Swift cluster.
 
-    If a swift-agent server seems to be running, that will be used to cache responses.
+    If a swift-agent server seems to be running, that will be used
+    to cache responses.
     '''
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument(
@@ -28,7 +29,8 @@ def main(args):
         '--auth', help='the auth endpoint to use')
     parser.add_argument(
         '--refresh', action='store_true',
-        help='if using a swift-agent server, force a fresh response from the cluster')
+        help='if using a swift-agent server, force a fresh response '
+             'from the cluster')
     args = parser.parse_args(args[1:])
 
     if args.debug:

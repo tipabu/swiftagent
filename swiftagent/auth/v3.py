@@ -2,6 +2,7 @@
 Authenticator module for Ye Olde v1 auth.
 '''
 import logging
+import time
 
 from swiftagent.auth import base
 from swiftagent import opt
@@ -68,9 +69,11 @@ class V3Authenticator(base.BaseAuthenticator):
 
         token = headers['X-Subject-Token']
         try:
-            if 'expires_at' in resp['token']:
-                LOGGER.info('Token expires at %s',
-                            resp['token']['expires_at'])
+            expiry = resp['token'].get('expires_at')
+            if expiry is not None:
+                LOGGER.info('Token expires at %s', expiry)
+                expiry = time.mktime(time.strptime(
+                    expiry.replace('Z', 'UTC'), '%Y-%m-%dT%H:%M:%S.%f%Z'))
             services = [s for s in resp['token']['catalog']
                         if s.get('type') == 'object-store']
             LOGGER.info('Found services: %r', [s['name'] for s in services])
@@ -79,7 +82,7 @@ class V3Authenticator(base.BaseAuthenticator):
                     'service_name', 'region', 'interface')):
                 LOGGER.info('No service/region/interface specified; '
                             'returning first endpoint.')
-                return services[0]['endpoints'][0]['url'], token
+                return services[0]['endpoints'][0]['url'], token, expiry
 
             if 'service_name' in self.conf:
                 services = [s for s in services
@@ -101,6 +104,6 @@ class V3Authenticator(base.BaseAuthenticator):
                 endpoints = [e for e in endpoints
                              if e['interface'] == self.conf['interface']]
 
-            return endpoints[0]['url'], token
+            return endpoints[0]['url'], token, expiry
         except (KeyError, TypeError) as exc:
             raise base.AuthError(self, 'Error in response: %r' % exc)

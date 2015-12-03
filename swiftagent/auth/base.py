@@ -2,6 +2,8 @@
 Module providing the basics to build an authenticator.
 '''
 import json
+import time
+
 import requests
 
 
@@ -55,10 +57,19 @@ class BaseAuthenticator(object):
         self.conf = self.__class__.get_opts().validate(options)
         self.storage_url = None
         self.token = ''
+        self.expiration_time = None
         self.check_insecure = check_insecure
 
     def should_verify(self, url):
         return not (self.check_insecure and self.check_insecure(url))
+
+    @property
+    def token_has_expired(self):
+        if not self.token:
+            return True  # No token is never valid
+        if self.expiration_time is None:
+            return False  # Assume token never expires
+        return self.expiration_time < time.time()
 
     def make_json_request(self, data):
         data = json.dumps(data)
@@ -95,13 +106,13 @@ class BaseAuthenticator(object):
 
         :returns: a (storage_url, token) pair
         '''
-        if self.storage_url is None or force_reauth:
-            self.storage_url, self.token = self.reauth()
-        return self.storage_url, self.token
+        if self.token_has_expired or force_reauth:
+            self.storage_url, self.token, self.expiration_time = self.reauth()
+        return self.storage_url, self.token, self.expiration_time
 
     def reauth(self):
         '''Get a fresh set of credentials.
 
-        :returns: a fresh (storage_url, token) pair
+        :returns: a fresh (storage_url, token, expiration time) triple
         '''
         raise NotImplementedError()

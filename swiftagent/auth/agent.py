@@ -24,7 +24,7 @@ class AgentAuthenticator(base.BaseAuthenticator):
         return opt.StrOpt('auth_name')
 
     def reauth(self):
-        prompted, (storage_url, token) = client.get_auth_with_unlock(
+        prompted, (storage_url, token, expiry) = client.get_auth_with_unlock(
             self.conf['auth_name'], reauth=True)
         self.ever_prompted = self.ever_prompted or prompted
-        return storage_url, token
+        return storage_url, token, expiry

@@ -17,8 +17,12 @@ class TokenAuthenticator(base.BaseAuthenticator):
             opt.Maybe(opt.StrOpt('auth_token')),
         )
 
+    @property
+    def token_has_expired(self):
+        return self.storage_url is None
+
     def reauth(self):
-        return self.conf['storage_url'], self.conf.get('auth_token', '')
+        return self.conf['storage_url'], self.conf.get('auth_token', ''), None
 
 
 class NoAuthAuthenticator(TokenAuthenticator):

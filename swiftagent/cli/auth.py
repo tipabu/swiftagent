@@ -16,7 +16,8 @@ from swiftagent import models
 def main(args):
     '''Get a storage URL and auth token for a Swift cluster.
 
-    If a swift-agent server seems to be running, that will be used to authenticate.
+    If a swift-agent server seems to be running, that will be used
+    to authenticate.
     '''
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument(
@@ -27,7 +28,8 @@ def main(args):
         help='the auth endpoint to use')
     parser.add_argument(
         '--verify', action='store_true', default=None,
-        help='verify the token is still valid if received from a swift-agent server')
+        help='verify the token is still valid if received from '
+             'a swift-agent server')
     parser.add_argument(
         '--no-verify', action='store_false', dest='verify',
         help='skip token verification')
@@ -49,7 +51,7 @@ def main(args):
         authenticator = agent.AgentAuthenticator({'auth_name': auth})
     else:
         authenticator = conf.get_auth(auth)
-    storage_url, token = authenticator.get_credentials()
+    storage_url, token, expiry = authenticator.get_credentials()
 
     if args.verify is None:
         verify = conf.get_default_verify(auth)
@@ -67,7 +69,8 @@ def main(args):
             sock = os.environ[client.SOCKET_ENV_VAR]
             with client.SwiftAgentClient(sock) as agent_client:
                 agent_client.unlock(auth, password)
-                storage_url, token = agent_client.auth(auth)
+                storage_url, token, expiry = agent_client.auth(auth)
 
     io.export({'OS_STORAGE_URL': storage_url,
-               'OS_AUTH_TOKEN': token})
+               'OS_AUTH_TOKEN': token,
+               'OS_AUTH_TOKEN_EXPIRES': expiry})

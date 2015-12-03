@@ -16,11 +16,12 @@ LOGGER.addHandler(logging.NullHandler())
 class Cluster(object):
     def __init__(self, authenticator):
         self.auth = authenticator
-        storage_url, dummy = self.auth.get_credentials()
+        storage_url, dummy, dummy = self.auth.get_credentials()
         # NB: base_url should still include /v1 if present
         storage_url = storage_url.rstrip('/')
         if storage_url.count('/') >= 4:
-            self.base_url, self.default_account_name = storage_url.rsplit('/', 1)
+            self.base_url, self.default_account_name = \
+                storage_url.rsplit('/', 1)
         else:
             self.base_url = storage_url
             self.default_account_name = None
@@ -49,7 +50,7 @@ class Cluster(object):
 
     def authed_req(self, method, url, params=None, headers=None):
         headers = headers or {}
-        dummy, token = self.auth.get_credentials()
+        dummy, token, dummy = self.auth.get_credentials()
         if token:
             headers['X-Auth-Token'] = token
         resp = requests.request(

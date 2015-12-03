@@ -105,8 +105,9 @@ class SwiftAgentServer(comm.LineOrientedUnixServer):
         :returns: a string of the form "auth [url] [token]"
         '''
         with self.purge_on_error(data, base.Unauthorized):
-            url, token = self.get_authenticator(data).get_credentials()
-        return 'auth %s %s' % (url, token)
+            authenticator = self.get_authenticator(data)
+            url, token, expiry = authenticator.get_credentials()
+        return 'auth %s %s %s' % (url, token, expiry)
 
     def handle_reauth(self, data):
         '''Socket command: refresh the credentials for an auth config.
@@ -114,8 +115,8 @@ class SwiftAgentServer(comm.LineOrientedUnixServer):
         :param data: a string of the form "[auth_config]"
         :returns: a string of the form "auth [url] [token]"
         '''
-        url, token = self.get_authenticator(data).reauth()
-        return 'auth %s %s' % (url, token)
+        url, token, expiry = self.get_authenticator(data).reauth()
+        return 'auth %s %s %s' % (url, token, expiry)
 
     def handle_info(self, data):
         '''Socket command: get the capabilities of a Swift cluster.

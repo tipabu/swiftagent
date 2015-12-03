@@ -30,10 +30,11 @@ class V1Authenticator(base.BaseAuthenticator):
                         self.check_insecure(self.conf['auth_url'])))
         if resp.status_code // 100 != 2:
             raise base.error_from_response(resp, self)
+        headers = resp.headers
         missing_headers = [h for h in ('X-Auth-Token', 'X-Storage-Url')
-                           if h not in resp.headers]
+                           if h not in headers]
         if missing_headers:
             raise base.AuthError(
                 self,
                 'Missing header(s): %s' % ', '.join(missing_headers))
-        return resp.headers['X-Storage-Url'], resp.headers['X-Auth-Token']
+        return headers['X-Storage-Url'], headers['X-Auth-Token'], None

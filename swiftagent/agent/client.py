@@ -60,6 +60,14 @@ class SwiftAgentClient(comm.LineOrientedUnixClient):
         raise_on_error(result, self)
         return result == 'reloaded'
 
+    def _parse_auth_response(self, result):
+        raise_on_error(result, self)
+        if not result.startswith('auth '):
+            raise base.AuthError(self, 'Unexpected response: %s' % result)
+        url, token, expiry = result[5:].split(' ', 2)
+        expiry = None if expiry == 'None' else float(expiry)
+        return url, token, expiry
+
     def auth(self, auth_name):
         '''Fetch the details of an authenticated session from swift-agent.
 
@@ -67,11 +75,8 @@ class SwiftAgentClient(comm.LineOrientedUnixClient):
         :returns: a tuple of (storage_url, auth_token)
         :raises: any of the possibilities from raise_on_error
         '''
-        result = self.send_command('auth %s' % auth_name)
-        raise_on_error(result, self)
-        if not result.startswith('auth '):
-            raise base.AuthError(self, 'Unexpected response: %s' % result)
-        return result[5:].split(' ', 1)
+        return self._parse_auth_response(
+            self.send_command('auth %s' % auth_name))
 
     def reauth(self, auth_name):
         '''Fetch the details of a freshly auth'ed session from swift-agent.
@@ -80,11 +85,8 @@ class SwiftAgentClient(comm.LineOrientedUnixClient):
         :returns: a tuple of (storage_url, auth_token)
         :raises: any of the possibilities from raise_on_error
         '''
-        result = self.send_command('reauth %s' % auth_name)
-        raise_on_error(result, self)
-        if not result.startswith('auth '):
-            raise base.AuthError(self, 'Unexpected response: %s' % result)
-        return result[5:].split(' ', 1)
+        return self._parse_auth_response(
+            self.send_command('reauth %s' % auth_name))
 
     def unlock(self, auth_name, password):
         '''Try to unlock an authenticated session.
