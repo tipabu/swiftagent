@@ -22,7 +22,7 @@ class V1Authenticator(base.BaseAuthenticator):
             self.conf['auth_url'],
             headers={
                 'X-Auth-User': self.conf['username'],
-                'X-Auth_Key': self.conf['password'],
+                'X-Auth-Key': self.conf['password'],
                 'Content-Length': 0,
             },
             timeout=10,
