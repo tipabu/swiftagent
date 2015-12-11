@@ -53,6 +53,15 @@ class DefaultingConfigParser(configparser.RawConfigParser):
     getboolean = _with_default('getboolean')
 
 
+CONFIGS = [
+    '/etc/swiftagent.conf',
+    os.path.expanduser('~/.swiftagent.conf'),
+    'swiftagent.conf',
+]
+if 'SWIFT_AGENT_CONF' in os.environ:
+    CONFIGS.append(os.environ['SWIFT_AGENT_CONF'])
+
+
 class SwiftConfig(object):
     '''Configuration object to manage access to Swift clusters.
 
@@ -67,14 +76,11 @@ class SwiftConfig(object):
     '''
     def __init__(self):
         self.conf = DefaultingConfigParser()
-        configs = self.conf.read([
-            '/etc/swiftagent.conf',
-            os.path.expanduser('~/.swiftagent.conf'),
-            'swiftagent.conf',
-        ])
-        if 'SWIFT_AGENT_CONF' in os.environ:
-            configs.extend(self.conf.read([os.environ['SWIFT_AGENT_CONF']]))
+        configs = self.conf.read(CONFIGS)
         LOGGER.info('Read configs: %r', configs)
+        self._mtimes = {
+            p: os.path.getmtime(p) if p in configs else None
+            for p in CONFIGS}
 
         if self.conf.has_section('insecure'):
             self.insecure_servers = self.conf.get('insecure', 'servers', '')
@@ -85,6 +91,22 @@ class SwiftConfig(object):
         self.insecure_servers = {scheme_netloc_only(server)
                                  for server in self.insecure_servers.split()}
         self.insecure_auth = self.insecure_auth.split()
+
+    def needs_reload(self):
+        for path, mtime in self._mtimes.items():
+            if mtime is None:
+                if os.access(path, os.R_OK):
+                    # couldn't read it before, but we can read it now
+                    return True
+                # else, we couldn't read it anyway. don't care about mtimes
+                continue
+            try:
+                if os.path.getmtime(path) > mtime:
+                    return True
+            except OSError:
+                # path does not exist, presumably. at any rate,
+                # assume we're up to date
+                pass
 
     def check_insecure(self, url):
         '''Check whether a URL should be considered "insecure".

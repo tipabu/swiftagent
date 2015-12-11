@@ -17,17 +17,17 @@ class SwiftAgentServer(comm.LineOrientedUnixServer):
             'authenticators': {},
             'info': {},
         }
-        self.reload()
-
-    def reload(self):
-        '''Reload the backing SwiftConfig.'''
-        self.conf = config.SwiftConfig()
+        self.conf = None
 
     def get_authenticator(self, auth_config):
         '''Get an authenticator from an auth config.
 
         :param auth_config: the auth config to use
         '''
+        if not self.conf or self.conf.needs_reload():
+            self.conf = config.SwiftConfig()
+            self.cache['authenticators'] = {}
+
         authenticator = self.cache['authenticators'].get(auth_config)
         if not authenticator:
             password = self.cache['passwords'].get(auth_config)

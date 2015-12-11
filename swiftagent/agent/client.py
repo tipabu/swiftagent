@@ -50,16 +50,6 @@ class SwiftAgentClient(comm.LineOrientedUnixClient):
     for example; the connection will almost certainly time out while waiting
     for user input.
     '''
-    def reload(self):
-        '''Reload the swift config server-side.
-
-        :returns: True if the server acknowledges a reload, False otherwise
-        :raises: any of the possibilities from raise_on_error
-        '''
-        result = self.send_command('reload')
-        raise_on_error(result, self)
-        return result == 'reloaded'
-
     def _parse_auth_response(self, result):
         raise_on_error(result, self)
         if not result.startswith('auth '):
