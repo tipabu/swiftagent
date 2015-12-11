@@ -145,6 +145,24 @@ def can_use_swift_agent():
     return stat.S_ISSOCK(mode)
 
 
+def get_auth(auth_name, reauth=False):
+    '''Fetch the details of an auth'ed session from swift-agent.
+
+    This will never prompt to unlock, but may raise a PasswordRequired error.
+
+    :param auth_name: the name of the auth config to use
+    :param reauth: if True, try to fetch a fresh token
+    :returns: a tuple of (prompted_for_password,
+                          (storage_url, auth_token, expires))
+    :raises: any of the possibilities from raise_on_error
+    '''
+    with SwiftAgentClient(os.environ[SOCKET_ENV_VAR]) as client:
+        if reauth:
+            return client.reauth(auth_name)
+        else:
+            return client.auth(auth_name)
+
+
 def get_auth_with_unlock(auth_name, reauth=False):
     '''Fetch the details of an auth'ed session from swift-agent.
 
@@ -152,22 +170,22 @@ def get_auth_with_unlock(auth_name, reauth=False):
     interactive shell, prompt to unlock it.
 
     :param auth_name: the name of the auth config to use
-    :returns: a tuple of (prompted_for_password, (storage_url, auth_token))
+    :param reauth: if True, try to fetch a fresh token
+    :returns: a tuple of (prompted_for_password,
+                          (storage_url, auth_token, expires))
     :raises: any of the possibilities from raise_on_error
     '''
-    def auth_fn():
-        if reauth:
-            return client.reauth(auth_name)
-        else:
-            return client.auth(auth_name)
-
     try:
-        with SwiftAgentClient(os.environ[SOCKET_ENV_VAR]) as client:
-            return False, auth_fn()
+        return False, get_auth(auth_name, reauth)
     except base.PasswordRequired:
         if not sys.stdin.isatty():
             raise
-        password = getpass.getpass()
-        with SwiftAgentClient(os.environ[SOCKET_ENV_VAR]) as client:
-            client.unlock(auth_name, password)
-            return True, auth_fn()
+
+    # Need to unlock
+    password = getpass.getpass()
+    with SwiftAgentClient(os.environ[SOCKET_ENV_VAR]) as client:
+        client.unlock(auth_name, password)
+        if reauth:
+            return True, client.reauth(auth_name)
+        else:
+            return True, client.auth(auth_name)

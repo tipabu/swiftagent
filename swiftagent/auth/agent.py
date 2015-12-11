@@ -17,6 +17,11 @@ class AgentAuthenticator(base.BaseAuthenticator):
         if not client.can_use_swift_agent():
             raise TypeError('AgentAuthenticator requires a running '
                             'swift-agent process')
+        try:
+            self.storage_url, self.token, self.expiry = \
+                client.get_auth(self.conf['auth_name'])
+        except (client.SwiftAgentClientError, base.PasswordRequired):
+            pass   # worth a shot
         self.ever_prompted = False
 
     @classmethod
